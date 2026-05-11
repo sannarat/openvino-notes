@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun directoriesScreen(
-    directories: List<DirectoryItemUi> = previewDirectoriesFallback(),
+    directories: List<DirectoryItemUi>,
     onCreateDirectory: (String) -> Unit,
     onDeleteDirectory: (DirectoryItemUi) -> Unit,
     onRenameDirectory: (DirectoryItemUi, String) -> Unit,
@@ -280,11 +280,3 @@ private fun directoryRow(
         )
     }
 }
-
-private fun previewDirectoriesFallback(): List<DirectoryItemUi> =
-    listOf(
-        DirectoryItemUi(id = "all", name = "All Notes", noteCount = 0),
-        DirectoryItemUi(id = "study", name = "My Study", noteCount = 0),
-        DirectoryItemUi(id = "cook", name = "How to Cook", noteCount = 0),
-        DirectoryItemUi(id = "poems", name = "My poems", noteCount = 0),
-    )
