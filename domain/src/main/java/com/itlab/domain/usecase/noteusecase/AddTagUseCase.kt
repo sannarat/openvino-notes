@@ -10,21 +10,22 @@ class AddTagUseCase(
     suspend operator fun invoke(
         noteId: String,
         tagToAdd: String,
-    ) {
-        requireNotBlank(noteId, "Note id")
-        val normalizedTag = tagToAdd.trim()
-        requireNotBlank(normalizedTag, "Tag")
+    ): Result<Unit> =
+        runCatching {
+            requireNotBlank(noteId, "Note id")
+            val normalizedTag = tagToAdd.trim()
+            requireNotBlank(normalizedTag, "Tag")
 
-        val note =
-            repo.getNoteById(noteId)
-                ?: throw IllegalArgumentException("Note not found: $noteId")
+            val note =
+                repo.getNoteById(noteId)
+                    ?: throw IllegalArgumentException("Note not found: $noteId")
 
-        val updated =
-            note.copy(
-                tags = note.tags + normalizedTag,
-                updatedAt = Clock.System.now(),
-            )
+            val updated =
+                note.copy(
+                    tags = note.tags + normalizedTag,
+                    updatedAt = Clock.System.now(),
+                )
 
-        repo.updateNote(updated)
-    }
+            repo.updateNote(updated)
+        }
 }

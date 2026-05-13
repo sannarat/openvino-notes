@@ -9,17 +9,18 @@ import kotlin.time.Clock
 class UpdateFolderUseCase(
     private val repo: NoteFolderRepository,
 ) {
-    suspend operator fun invoke(folder: NoteFolder) {
-        requireNotBlank(folder.id, "Folder id")
-        require(folder.id != "all") { "System folder 'all' cannot be renamed" }
-        val normalizedName = folder.name.trim()
-        requireNotBlank(normalizedName, "Folder name")
-        val hasDuplicateName =
-            repo.observeFolders().first().any { existing ->
-                existing.id != folder.id && existing.name.trim().equals(normalizedName, ignoreCase = true)
-            }
-        require(!hasDuplicateName) { "Folder with name '$normalizedName' already exists" }
-        val folder = folder.copy(name = normalizedName, updatedAt = Clock.System.now())
-        repo.updateFolder(folder)
-    }
+    suspend operator fun invoke(folder: NoteFolder): Result<Unit> =
+        runCatching {
+            requireNotBlank(folder.id, "Folder id")
+            require(folder.id != "all") { "System folder 'all' cannot be renamed" }
+            val normalizedName = folder.name.trim()
+            requireNotBlank(normalizedName, "Folder name")
+            val hasDuplicateName =
+                repo.observeFolders().first().any { existing ->
+                    existing.id != folder.id && existing.name.trim().equals(normalizedName, ignoreCase = true)
+                }
+            require(!hasDuplicateName) { "Folder with name '$normalizedName' already exists" }
+            val folder = folder.copy(name = normalizedName, updatedAt = Clock.System.now())
+            repo.updateFolder(folder)
+        }
 }

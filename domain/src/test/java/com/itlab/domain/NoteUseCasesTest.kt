@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.fail
 import org.junit.Test
 
 class NoteUseCasesTest {
@@ -88,12 +87,12 @@ class NoteUseCasesTest {
 
             val note = Note(title = "A")
 
-            val id = create(note)
+            val id = create(note).getOrThrow()
 
             val created = get(id)!!
 
             val updated = created.copy(title = "B")
-            update(updated)
+            update(updated).getOrThrow()
 
             val result = get(id)
             assertEquals("B", result?.title)
@@ -118,10 +117,9 @@ class NoteUseCasesTest {
 
             val note = Note(title = "Note")
 
-            val noteId = createNote(note)
+            val noteId = createNote(note).getOrThrow()
 
-            move("f1", noteId)
-
+            move("f1", noteId).getOrThrow()
             val updated = notesRepo.getNoteById(noteId)
 
             assertEquals("f1", updated?.folderId)
@@ -134,7 +132,7 @@ class NoteUseCasesTest {
             val observe = ObserveNotesUseCase(repo)
             val create = CreateNoteUseCase(repo)
 
-            create(Note(title = "Test"))
+            create(Note(title = "Test")).getOrThrow()
             val list = observe().first()
 
             assertEquals(1, list.size)
@@ -154,7 +152,7 @@ class NoteUseCasesTest {
                 )
             repo.createNote(note)
 
-            useCase("n1", "new-tag")
+            useCase("n1", "new-tag").getOrThrow()
 
             val updated = repo.getNoteById("n1")
 
@@ -167,12 +165,9 @@ class NoteUseCasesTest {
             val repo = FakeNotesRepo()
             val useCase = AddTagUseCase(repo)
 
-            try {
-                useCase("missing_id", "tag")
-                fail("Expected IllegalArgumentException")
-            } catch (e: IllegalArgumentException) {
-                assertEquals("Note not found: missing_id", e.message)
-            }
+            val result = useCase("missing_id", "tag")
+            assertEquals(true, result.isFailure)
+            assertEquals("Note not found: missing_id", result.exceptionOrNull()?.message)
         }
 
     @Test
@@ -189,7 +184,7 @@ class NoteUseCasesTest {
                 )
             repo.createNote(note)
 
-            useCase("n2", "remove-me")
+            useCase("n2", "remove-me").getOrThrow()
 
             val updated = repo.getNoteById("n2")
 
@@ -202,12 +197,9 @@ class NoteUseCasesTest {
             val repo = FakeNotesRepo()
             val useCase = DeleteTagUseCase(repo)
 
-            try {
-                useCase("missing_id", "tag")
-                fail("Expected IllegalArgumentException")
-            } catch (e: IllegalArgumentException) {
-                assertEquals("Note not found: missing_id", e.message)
-            }
+            val result = useCase("missing_id", "tag")
+            assertEquals(true, result.isFailure)
+            assertEquals("Note not found: missing_id", result.exceptionOrNull()?.message)
         }
 
     @Test
@@ -226,7 +218,7 @@ class NoteUseCasesTest {
                 )
             repo.createNote(original)
 
-            val newId = useCase("n3")
+            val newId = useCase("n3").getOrThrow()
 
             val duplicated = repo.getNoteById(newId)
 
@@ -252,7 +244,7 @@ class NoteUseCasesTest {
                 )
             repo.createNote(original)
 
-            val newId = useCase("n4")
+            val newId = useCase("n4").getOrThrow()
 
             val duplicated = repo.getNoteById(newId)
 
@@ -265,12 +257,9 @@ class NoteUseCasesTest {
             val repo = FakeNotesRepo()
             val useCase = DuplicateNoteUseCase(repo)
 
-            try {
-                useCase("missing_id")
-                fail("Expected IllegalArgumentException")
-            } catch (e: IllegalArgumentException) {
-                assertEquals("Note not found: missing_id", e.message)
-            }
+            val result = useCase("missing_id")
+            assertEquals(true, result.isFailure)
+            assertEquals("Note not found: missing_id", result.exceptionOrNull()?.message)
         }
 
     @Test
@@ -314,11 +303,11 @@ class NoteUseCasesTest {
                 )
             repo.createNote(note)
 
-            useCase("n7")
+            useCase("n7").getOrThrow()
             val afterFirstSwitch = repo.getNoteById("n7")
             assertEquals(true, afterFirstSwitch?.isFavorite)
 
-            useCase("n7")
+            useCase("n7").getOrThrow()
             val afterSecondSwitch = repo.getNoteById("n7")
             assertEquals(false, afterSecondSwitch?.isFavorite)
         }
@@ -329,12 +318,9 @@ class NoteUseCasesTest {
             val repo = FakeNotesRepo()
             val useCase = SwitchFavoriteUseCase(repo)
 
-            try {
-                useCase("missing_id")
-                fail("Expected IllegalArgumentException")
-            } catch (e: IllegalArgumentException) {
-                assertEquals("Note not found", e.message)
-            }
+            val result = useCase("missing_id")
+            assertEquals(true, result.isFailure)
+            assertEquals("Note not found", result.exceptionOrNull()?.message)
         }
 
     @Test

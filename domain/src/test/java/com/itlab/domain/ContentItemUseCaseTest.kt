@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.fail
 import org.junit.Test
 
 class ContentItemUseCaseTest {
@@ -62,19 +61,19 @@ class ContentItemUseCaseTest {
                     ),
                 )
 
-            addItem("n1", item)
+            addItem("n1", item).getOrThrow()
 
-            val found = getItem("n1", item.id)
+            val found = getItem("n1", item.id).getOrThrow()
             assertEquals("Hello", (found as ContentItem.Text).text)
 
-            deleteItem("n1", item.id)
+            deleteItem("n1", item.id).getOrThrow()
 
-            val afterDelete = getItem("n1", item.id)
+            val afterDelete = getItem("n1", item.id).getOrThrow()
             assertNull(afterDelete)
         }
 
-    @Test(expected = IllegalArgumentException::class)
-    fun addContentItem_without_id_throws() =
+    @Test
+    fun addContentItem_without_id_returnsFailure() =
         runBlocking {
             val repo = FakeNotesRepo()
             val addItem = AddContentItemUseCase(repo)
@@ -88,7 +87,9 @@ class ContentItemUseCaseTest {
                     text = "Hello",
                 )
 
-            addItem("n1", badItem)
+            val result = addItem("n1", badItem)
+            assertEquals(true, result.isFailure)
+            assertEquals("ContentItem id must not be blank", result.exceptionOrNull()?.message)
         }
 
     @Test
@@ -105,11 +106,11 @@ class ContentItemUseCaseTest {
             val item1 = createItem(ContentItem.Text(text = "A"))
             val item2 = createItem(ContentItem.Text(text = "B"))
 
-            addItem("n1", item1)
-            addItem("n1", item2)
+            addItem("n1", item1).getOrThrow()
+            addItem("n1", item2).getOrThrow()
 
-            val found1 = getItem("n1", item1.id)
-            val found2 = getItem("n1", item2.id)
+            val found1 = getItem("n1", item1.id).getOrThrow()
+            val found2 = getItem("n1", item2.id).getOrThrow()
 
             assertEquals("A", (found1 as ContentItem.Text).text)
             assertEquals("B", (found2 as ContentItem.Text).text)
@@ -124,7 +125,7 @@ class ContentItemUseCaseTest {
             val note = Note(id = "n1", title = "Test")
             repo.createNote(note)
 
-            deleteItem("n1", "wrong-id") // не должно упасть
+            deleteItem("n1", "wrong-id").getOrThrow()
 
             val result = repo.getNoteById("n1")
             assertEquals(0, result?.contentItems?.size)
@@ -142,7 +143,7 @@ class ContentItemUseCaseTest {
 
             val item = createItem(ContentItem.Text(text = "Hello"))
 
-            addItem("n1", item)
+            addItem("n1", item).getOrThrow()
 
             assertEquals(0, note.contentItems.size)
         }
@@ -156,13 +157,14 @@ class ContentItemUseCaseTest {
             repo.createNote(note)
 
             val item = ContentItem.Text(id = "fixed-id", text = "Hello")
-            addItem("n1", item)
 
-            try {
-                addItem("n1", item.copy(text = "World"))
-                fail("Expected IllegalArgumentException")
-            } catch (e: IllegalArgumentException) {
-                assertEquals("Content item with id 'fixed-id' already exists in note 'n1'", e.message)
-            }
+            addItem("n1", item).getOrThrow()
+
+            val result = addItem("n1", item.copy(text = "World"))
+            assertEquals(true, result.isFailure)
+            assertEquals(
+                "Content item with id 'fixed-id' already exists in note 'n1'",
+                result.exceptionOrNull()?.message,
+            )
         }
 }

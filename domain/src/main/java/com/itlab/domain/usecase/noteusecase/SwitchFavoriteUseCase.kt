@@ -5,16 +5,17 @@ import com.itlab.domain.repository.NotesRepository
 class SwitchFavoriteUseCase(
     private val repo: NotesRepository,
 ) {
-    suspend operator fun invoke(noteId: String) {
-        val note =
-            repo.getNoteById(noteId)
-                ?: throw IllegalArgumentException("Note not found")
+    suspend operator fun invoke(noteId: String): Result<Unit> =
+        runCatching {
+            val note =
+                repo.getNoteById(noteId)
+                    ?: throw IllegalArgumentException("Note not found")
 
-        val updatedNote =
-            note.copy(
-                isFavorite = !note.isFavorite,
-            )
+            val updatedNote =
+                note.copy(
+                    isFavorite = !note.isFavorite,
+                )
 
-        repo.updateNote(updatedNote)
-    }
+            repo.updateNote(updatedNote)
+        }
 }

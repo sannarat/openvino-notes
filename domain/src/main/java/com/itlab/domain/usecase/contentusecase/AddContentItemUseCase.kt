@@ -11,25 +11,26 @@ class AddContentItemUseCase(
     suspend operator fun invoke(
         noteId: String,
         item: ContentItem,
-    ) {
-        requireNotBlank(noteId, "Note id")
-        requireNotBlank(item.id, "ContentItem id")
+    ): Result<Unit> =
+        runCatching {
+            requireNotBlank(noteId, "Note id")
+            requireNotBlank(item.id, "ContentItem id")
 
-        val note =
-            notesRepository.getNoteById(noteId)
-                ?: throw IllegalArgumentException("Note not found: $noteId")
+            val note =
+                notesRepository.getNoteById(noteId)
+                    ?: throw IllegalArgumentException("Note not found: $noteId")
 
-        val updated =
-            note.copy(
-                contentItems =
-                    note.contentItems.also {
-                        require(it.none { existing -> existing.id == item.id }) {
-                            "Content item with id '${item.id}' already exists in note '$noteId'"
-                        }
-                    } + item,
-                updatedAt = Clock.System.now(),
-            )
+            val updated =
+                note.copy(
+                    contentItems =
+                        note.contentItems.also {
+                            require(it.none { existing -> existing.id == item.id }) {
+                                "Content item with id '${item.id}' already exists in note '$noteId'"
+                            }
+                        } + item,
+                    updatedAt = Clock.System.now(),
+                )
 
-        notesRepository.updateNote(updated)
-    }
+            notesRepository.updateNote(updated)
+        }
 }

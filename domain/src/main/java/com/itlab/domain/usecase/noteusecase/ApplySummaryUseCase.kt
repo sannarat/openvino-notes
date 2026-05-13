@@ -9,19 +9,20 @@ class ApplySummaryUseCase(
     suspend operator fun invoke(
         noteId: String,
         newSummary: String,
-    ) {
-        val note =
-            repo.getNoteById(noteId)
-                ?: throw IllegalArgumentException("Note not found")
+    ): Result<Unit> =
+        runCatching {
+            val note =
+                repo.getNoteById(noteId)
+                    ?: throw IllegalArgumentException("Note not found")
 
-        val updated =
-            note.copy(
-                summary = newSummary,
-                updatedAt =
-                    Clock.System
-                        .now(),
-            )
+            val updated =
+                note.copy(
+                    summary = newSummary,
+                    updatedAt =
+                        Clock.System
+                            .now(),
+                )
 
-        repo.updateNote(updated)
-    }
+            repo.updateNote(updated)
+        }
 }

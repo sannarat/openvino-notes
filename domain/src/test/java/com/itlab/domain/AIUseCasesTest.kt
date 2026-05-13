@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
-import org.junit.Assert.fail
 import org.junit.Test
 
 class AIUseCasesTest {
@@ -96,7 +95,7 @@ class AIUseCasesTest {
 
             val result = useCase("n1")
 
-            assertEquals("AI summary", result)
+            assertEquals("AI summary", result.getOrThrow())
             assertEquals("Hello", ai.summaryInput)
         }
 
@@ -107,12 +106,9 @@ class AIUseCasesTest {
             val ai = FakeNoteAiService()
             val useCase = SuggestSummaryUseCase(ai, repo)
 
-            try {
-                useCase("missing_id")
-                fail("Expected IllegalArgumentException")
-            } catch (e: IllegalArgumentException) {
-                assertEquals("Note not found: missing_id", e.message)
-            }
+            val result = useCase("missing_id")
+            assertEquals(true, result.isFailure)
+            assertEquals("Note not found: missing_id", result.exceptionOrNull()?.message)
         }
 
     @Test
@@ -155,7 +151,7 @@ class AIUseCasesTest {
 
             assertEquals(
                 setOf("text-tag-1", "text-tag-2", "image-tag-1", "image-tag-2"),
-                result,
+                result.getOrThrow(),
             )
         }
 
@@ -166,12 +162,9 @@ class AIUseCasesTest {
             val ai = FakeNoteAiService()
             val useCase = SuggestTagsUseCase(ai, repo)
 
-            try {
-                useCase("missing_id")
-                fail("Expected IllegalArgumentException")
-            } catch (e: IllegalArgumentException) {
-                assertEquals("Note not found: missing_id", e.message)
-            }
+            val result = useCase("missing_id")
+            assertEquals(true, result.isFailure)
+            assertEquals("Note not found: missing_id", result.exceptionOrNull()?.message)
         }
 
     @Test
@@ -189,7 +182,7 @@ class AIUseCasesTest {
 
             repo.createNote(note)
 
-            useCase("n3", "new summary")
+            useCase("n3", "new summary").getOrThrow()
 
             val updated = repo.getNoteById("n3")
 
@@ -202,12 +195,9 @@ class AIUseCasesTest {
             val repo = FakeNotesRepo()
             val useCase = ApplySummaryUseCase(repo)
 
-            try {
-                useCase("missing_id", "new summary")
-                fail("Expected IllegalArgumentException")
-            } catch (e: IllegalArgumentException) {
-                assertEquals("Note not found", e.message)
-            }
+            val result = useCase("missing_id", "new summary")
+            assertEquals(true, result.isFailure)
+            assertEquals("Note not found", result.exceptionOrNull()?.message)
         }
 
     @Test
@@ -227,7 +217,7 @@ class AIUseCasesTest {
 
             val newTags = setOf("kotlin", "android", "openvino")
 
-            useCase("n4", newTags)
+            useCase("n4", newTags).getOrThrow()
 
             val updated = repo.getNoteById("n4")
 
@@ -240,11 +230,8 @@ class AIUseCasesTest {
             val repo = FakeNotesRepo()
             val useCase = ApplyTagsUseCase(repo)
 
-            try {
-                useCase("missing_id", setOf("tag"))
-                fail("Expected IllegalArgumentException")
-            } catch (e: IllegalArgumentException) {
-                assertEquals("Note not found", e.message)
-            }
+            val result = useCase("missing_id", setOf("tag"))
+            assertEquals(true, result.isFailure)
+            assertEquals("Note not found", result.exceptionOrNull()?.message)
         }
 }
