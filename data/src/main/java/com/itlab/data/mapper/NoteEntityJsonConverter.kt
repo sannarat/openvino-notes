@@ -4,7 +4,6 @@ import com.itlab.data.entity.NoteEntity
 import com.itlab.data.model.NoteBodyDto
 import com.itlab.data.model.NoteDto
 import com.itlab.data.model.NoteMetaDto
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class NoteEntityJsonConverter(
@@ -53,8 +52,8 @@ class NoteEntityJsonConverter(
             title = body.title,
             content = body.content,
             folderId = folderId,
-            createdAt = kotlinx.datetime.Instant.fromEpochMilliseconds(metadata.createdAt),
-            updatedAt = kotlinx.datetime.Instant.fromEpochMilliseconds(metadata.updatedAt),
+            createdAt = kotlin.time.Instant.fromEpochMilliseconds(metadata.createdAt),
+            updatedAt = kotlin.time.Instant.fromEpochMilliseconds(metadata.updatedAt),
             tags = metadata.tags,
             isFavorite = metadata.isFavorite,
             isSynced = true,

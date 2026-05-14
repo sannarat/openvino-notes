@@ -9,18 +9,18 @@ import com.itlab.domain.model.TextFormat
 
 fun ContentItem.toDto(): ContentItemDto =
     when (this) {
-        is ContentItem.Text -> ContentItemDto.Text(text, format.toDto())
-        is ContentItem.Image -> ContentItemDto.Image(source.toDto(), mimeType, width, height)
-        is ContentItem.File -> ContentItemDto.File(source.toDto(), mimeType, name, size)
-        is ContentItem.Link -> ContentItemDto.Link(url, title)
+        is ContentItem.Text -> ContentItemDto.Text(id, text, format.toDto())
+        is ContentItem.Image -> ContentItemDto.Image(id, source.toDto(), mimeType, width, height)
+        is ContentItem.File -> ContentItemDto.File(id, source.toDto(), mimeType, name, size)
+        is ContentItem.Link -> ContentItemDto.Link(id, url, title)
     }
 
 fun ContentItemDto.toDomain(): ContentItem =
     when (this) {
-        is ContentItemDto.Text -> ContentItem.Text(text, format.toDomain())
-        is ContentItemDto.Image -> ContentItem.Image(source.toDomain(), mimeType, width, height)
-        is ContentItemDto.File -> ContentItem.File(source.toDomain(), mimeType, name, size)
-        is ContentItemDto.Link -> ContentItem.Link(url, title)
+        is ContentItemDto.Text -> ContentItem.Text(id, text, format.toDomain())
+        is ContentItemDto.Image -> ContentItem.Image(id, source.toDomain(), mimeType, width, height)
+        is ContentItemDto.File -> ContentItem.File(id, source.toDomain(), mimeType, name, size)
+        is ContentItemDto.Link -> ContentItem.Link(id, url, title)
     }
 
 fun DataSource.toDto() = DataSourceDto(localPath, remoteUrl)

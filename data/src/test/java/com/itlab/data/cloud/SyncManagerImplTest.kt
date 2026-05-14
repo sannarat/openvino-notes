@@ -17,7 +17,6 @@ import io.mockk.just
 import io.mockk.unmockkAll
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Clock
 import kotlinx.serialization.SerializationException
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -26,6 +25,7 @@ import org.junit.Before
 import org.junit.Test
 import timber.log.Timber
 import java.io.IOException
+import kotlin.time.Clock
 
 class SyncManagerImplTest {
     @MockK

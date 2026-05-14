@@ -5,14 +5,18 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 sealed class ContentItemDto {
+    abstract val id: String
+
     @Serializable
     data class Text(
+        override val id: String,
         val text: String,
         val format: TextFormatDto = TextFormatDto.PLAIN,
     ) : ContentItemDto()
 
     @Serializable
     data class Image(
+        override val id: String,
         val source: DataSourceDto,
         val mimeType: String,
         val width: Int? = null,
@@ -21,6 +25,7 @@ sealed class ContentItemDto {
 
     @Serializable
     data class File(
+        override val id: String,
         val source: DataSourceDto,
         val mimeType: String,
         val name: String,
@@ -29,6 +34,7 @@ sealed class ContentItemDto {
 
     @Serializable
     data class Link(
+        override val id: String,
         val url: String,
         val title: String? = null,
     ) : ContentItemDto()

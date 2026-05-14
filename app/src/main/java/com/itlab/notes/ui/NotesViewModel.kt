@@ -147,7 +147,10 @@ class NotesViewModel(
         val dir = (uiState.screen as? NotesUiScreen.DirectoryNotes)?.directory
         if (dir != null) {
             val newNote =
-                Note(folderId = dir.id.asDomainFolderId()).toUi()
+                Note(
+                    folderId = dir.id.asDomainFolderId(),
+                    userId = useCases.getUserIdUseCase() ?: "anonymous_user",
+                ).toUi()
             uiState =
                 uiState.copy(
                     screen = NotesUiScreen.NoteEditor(directory = dir, note = newNote),
@@ -165,12 +168,13 @@ class NotesViewModel(
     private fun saveNote(note: NoteItemUi) {
         val editor = uiState.screen as? NotesUiScreen.NoteEditor ?: return
         viewModelScope.launch {
+            val userId = useCases.getUserIdUseCase() ?: "anonymous_user"
             val targetFolderId = note.folderId ?: editor.directory.id.asDomainFolderId()
             val existing = latestNotes.firstOrNull { it.id == note.id }
             if (existing != null) {
                 useCases.updateNoteUseCase(existing.applyUiUpdate(note, targetFolderId))
             } else {
-                useCases.createNoteUseCase(note.toDomain(folderId = targetFolderId))
+                useCases.createNoteUseCase(note.toDomain(userId = userId, folderId = targetFolderId))
             }
             uiState = uiState.copy(screen = NotesUiScreen.DirectoryNotes(directory = editor.directory))
         }
@@ -221,12 +225,16 @@ internal fun Note.toUi(): NoteItemUi =
         folderId = folderId,
     )
 
-internal fun NoteItemUi.toDomain(folderId: String?): Note =
+internal fun NoteItemUi.toDomain(
+    userId: String,
+    folderId: String?,
+): Note =
     Note(
         id = id,
         title = title,
         folderId = folderId,
-        contentItems = listOf(ContentItem.Text(content)),
+        contentItems = listOf(ContentItem.Text(text = content)),
+        userId = userId,
     )
 
 internal fun Note.applyUiUpdate(
@@ -237,7 +245,7 @@ internal fun Note.applyUiUpdate(
     val updatedText =
         ui.content
             .takeIf { it.isNotBlank() }
-            ?.let { ContentItem.Text(it) }
+            ?.let { ContentItem.Text(text = it) }
 
     return copy(
         title = ui.title,

@@ -358,7 +358,7 @@ class NoteUseCasesTest {
                 Note(
                     id = "n8",
                     title = "Планы на отпуск",
-                    userId = testUserId
+                    userId = testUserId,
                 ),
             )
             repo.createNote(
@@ -366,7 +366,7 @@ class NoteUseCasesTest {
                     id = "n9",
                     title = "Покупки",
                     contentItems = listOf(ContentItem.Text(text = "Купить молоко и хлеб")),
-                    userId = testUserId
+                    userId = testUserId,
                 ),
             )
 

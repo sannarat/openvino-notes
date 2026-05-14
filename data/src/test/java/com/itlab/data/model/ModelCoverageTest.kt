@@ -1,6 +1,5 @@
 package com.itlab.data.model
 
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -31,10 +30,12 @@ class ModelCoverageTest {
 
     @Test
     fun testContentItemDtoCoverage() {
-        val text = ContentItemDto.Text("hello", TextFormatDto.MARKDOWN)
-        val image = ContentItemDto.Image(DataSourceDto(localPath = "/path"), "image/png", 100, 200)
-        val file = ContentItemDto.File(DataSourceDto(remoteUrl = "http"), "doc", "name", 1024L)
-        val link = ContentItemDto.Link("url", null)
+        val testID = "testID"
+
+        val text = ContentItemDto.Text(testID, "hello", TextFormatDto.MARKDOWN)
+        val image = ContentItemDto.Image(testID, DataSourceDto(localPath = "/path"), "image/png", 100, 200)
+        val file = ContentItemDto.File(testID, DataSourceDto(remoteUrl = "http"), "doc", "name", 1024L)
+        val link = ContentItemDto.Link(testID, "url", null)
 
         assertEquals(text, text.copy())
         assertEquals(image, image.copy())
@@ -44,7 +45,7 @@ class ModelCoverageTest {
         assertNotEquals(text, image)
         assertNotEquals(text, file)
         assertNotEquals(text, link)
-        val defaultText = ContentItemDto.Text("plain")
+        val defaultText = ContentItemDto.Text(testID, "plain")
         assertEquals(TextFormatDto.PLAIN, defaultText.format)
 
         val emptySource = DataSourceDto()
@@ -60,20 +61,20 @@ class ModelCoverageTest {
 
         assertEquals(ds1, ds2)
         assertNotEquals(ds1, ds3)
-        assertFalse(ds1 == null)
         assertFalse(ds1.equals("not a dto"))
         assertEquals(ds1.hashCode(), ds2.hashCode())
     }
 
     @Test
     fun testSerializationCoverage() {
+        val testId = "testID"
         val items: List<ContentItemDto> =
             listOf(
-                ContentItemDto.Text("test"),
-                ContentItemDto.Text("md", TextFormatDto.MARKDOWN),
-                ContentItemDto.Image(DataSourceDto("path"), "png"),
-                ContentItemDto.File(DataSourceDto(remoteUrl = "url"), "pdf", "file.pdf", 100L),
-                ContentItemDto.Link("http://test.com"),
+                ContentItemDto.Text(testId, "test"),
+                ContentItemDto.Text(testId, "md", TextFormatDto.MARKDOWN),
+                ContentItemDto.Image(testId, DataSourceDto("path"), "png"),
+                ContentItemDto.File(testId, DataSourceDto(remoteUrl = "url"), "pdf", "file.pdf", 100L),
+                ContentItemDto.Link(testId, "http://test.com"),
             )
 
         items.forEach { item ->

@@ -2,10 +2,10 @@ package com.itlab.data.mapper
 
 import android.R.id
 import com.itlab.data.entity.NoteEntity
-import kotlinx.datetime.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.time.Instant
 
 class NoteEntityJsonConverterTest {
     private val converter = NoteEntityJsonConverter()

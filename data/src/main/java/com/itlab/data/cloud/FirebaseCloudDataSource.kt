@@ -6,8 +6,8 @@ import com.itlab.domain.cloud.CloudNoteMetadata
 import com.itlab.domain.cloud.Result
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
-import kotlinx.datetime.Instant
 import java.io.File
+import kotlin.time.Instant
 
 class FirebaseCloudDataSource(
     private val storage: FirebaseStorage = FirebaseStorage.getInstance(),

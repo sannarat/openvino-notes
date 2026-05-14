@@ -1,7 +1,7 @@
 package com.itlab.domain.cloud
 
-import kotlinx.datetime.Instant
 import java.io.File
+import kotlin.time.Instant
 
 sealed interface Result<out T> {
     data class Success<out T>(

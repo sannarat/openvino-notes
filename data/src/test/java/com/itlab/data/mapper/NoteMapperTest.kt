@@ -26,7 +26,7 @@ class NoteMapperTest {
                 tags = setOf("money", "market"),
                 contentItems =
                     listOf(
-                        ContentItem.Text("I have money"),
+                        ContentItem.Text(text = "I have money"),
                         ContentItem.Image(
                             source = DataSource(localPath = "local/path"),
                             mimeType = "image/png",
@@ -37,7 +37,7 @@ class NoteMapperTest {
                             name = "doc.pdf",
                             size = 1024L,
                         ),
-                        ContentItem.Link("https://google.com"),
+                        ContentItem.Link(url = "https://google.com"),
                     ),
                 isFavorite = true,
                 summary = "cars",
@@ -105,7 +105,7 @@ class NoteMapperTest {
     fun `toDomain should correctly restore Note from NoteEntity`() {
         val originalItems =
             listOf(
-                ContentItem.Text("First item"),
+                ContentItem.Text(text = "First item"),
                 ContentItem.Link("https://itlab.com", "IT Lab"),
                 ContentItem.Image(
                     source = DataSource(localPath = "local/path"),
