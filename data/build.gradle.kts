@@ -33,6 +33,10 @@ android {
         }
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -81,6 +85,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.timber)
     implementation(libs.firebase.analytics)
+    implementation(libs.koin.android)
     testImplementation(libs.junit)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

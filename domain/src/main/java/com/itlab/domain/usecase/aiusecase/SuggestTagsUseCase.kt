@@ -1,4 +1,4 @@
-package com.itlab.domain.aiusecase
+package com.itlab.domain.usecase.aiusecase
 
 import com.itlab.domain.ai.NoteAiService
 import com.itlab.domain.model.ContentItem
@@ -21,14 +21,15 @@ class SuggestTagsUseCase(
                 image.source.localPath ?: image.source.remoteUrl
             }
 
-    suspend operator fun invoke(noteId: String): Set<String> {
-        val note =
-            repo.getNoteById(noteId)
-                ?: throw IllegalArgumentException("Note not found: $noteId")
+    suspend operator fun invoke(noteId: String): Result<Set<String>> =
+        runCatching {
+            val note =
+                repo.getNoteById(noteId)
+                    ?: throw IllegalArgumentException("Note not found: $noteId")
 
-        val text = extractText(note)
-        val imageUrls = extractImages(note)
+            val text = extractText(note)
+            val imageUrls = extractImages(note)
 
-        return ai.tagTXT(text) + ai.tagIMGs(imageUrls)
-    }
+            ai.tagTXT(text) + ai.tagIMGs(imageUrls)
+        }
 }

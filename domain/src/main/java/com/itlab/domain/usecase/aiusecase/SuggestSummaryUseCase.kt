@@ -1,4 +1,4 @@
-package com.itlab.domain.aiusecase
+package com.itlab.domain.usecase.aiusecase
 
 import com.itlab.domain.ai.NoteAiService
 import com.itlab.domain.model.ContentItem
@@ -14,12 +14,13 @@ class SuggestSummaryUseCase(
             .filterIsInstance<ContentItem.Text>()
             .joinToString("\n") { it.text }
 
-    suspend operator fun invoke(noteId: String): String {
-        val note =
-            repo.getNoteById(noteId)
-                ?: throw IllegalArgumentException("Note not found: $noteId")
+    suspend operator fun invoke(noteId: String): Result<String> =
+        runCatching {
+            val note =
+                repo.getNoteById(noteId)
+                    ?: throw IllegalArgumentException("Note not found: $noteId")
 
-        val text = extractText(note)
-        return ai.summarize(text)
-    }
+            val text = extractText(note)
+            ai.summarize(text)
+        }
 }

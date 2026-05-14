@@ -1,12 +1,14 @@
 package com.itlab.domain
 
+import com.itlab.domain.model.Note
 import com.itlab.domain.model.NoteFolder
 import com.itlab.domain.repository.NoteFolderRepository
-import com.itlab.domain.usecase.CreateFolderUseCase
-import com.itlab.domain.usecase.DeleteFolderUseCase
-import com.itlab.domain.usecase.GetFolderUseCase
-import com.itlab.domain.usecase.ObserveFoldersUseCase
-import com.itlab.domain.usecase.UpdateFolderUseCase
+import com.itlab.domain.repository.NotesRepository
+import com.itlab.domain.usecase.folderusecase.CreateFolderUseCase
+import com.itlab.domain.usecase.folderusecase.DeleteFolderUseCase
+import com.itlab.domain.usecase.folderusecase.GetFolderUseCase
+import com.itlab.domain.usecase.folderusecase.ObserveFoldersUseCase
+import com.itlab.domain.usecase.folderusecase.UpdateFolderUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -50,6 +52,20 @@ class FolderUseCasesTest {
         }
     }
 
+    private class FakeNotesRepo : NotesRepository {
+        override fun observeNotes() = MutableStateFlow<List<Note>>(emptyList())
+
+        override fun observeNotesByFolder(folderId: String) = MutableStateFlow<List<Note>>(emptyList())
+
+        override suspend fun getNoteById(id: String): Note? = null
+
+        override suspend fun createNote(note: Note): String = note.id
+
+        override suspend fun updateNote(note: Note) = Unit
+
+        override suspend fun deleteNote(id: String) = Unit
+    }
+
     @Test
     fun createFolder_and_getFolder() =
         runBlocking {
@@ -60,7 +76,7 @@ class FolderUseCasesTest {
 
             val folder = NoteFolder(name = "Test")
 
-            val id = create(folder)
+            val id = create(folder).getOrThrow()
 
             val result = get(id)
 
@@ -78,13 +94,12 @@ class FolderUseCasesTest {
 
             val folder = NoteFolder(name = "Old")
 
-            val id = create(folder)
+            val id = create(folder).getOrThrow()
 
             val created = get(id)!!
 
             val updated = created.copy(name = "New")
-            update(updated)
-
+            update(updated).getOrThrow()
             val result = get(id)
 
             assertEquals("New", result?.name)
@@ -96,14 +111,14 @@ class FolderUseCasesTest {
             val repo = FakeFolderRepo()
 
             val create = CreateFolderUseCase(repo)
-            val delete = DeleteFolderUseCase(repo)
+            val delete = DeleteFolderUseCase(repo, FakeNotesRepo())
             val get = GetFolderUseCase(repo)
 
             val folder = NoteFolder(name = "Test")
 
-            val id = create(folder)
+            val id = create(folder).getOrThrow()
 
-            delete(id)
+            delete(id).getOrThrow()
 
             val result = get(id)
 
@@ -117,10 +132,20 @@ class FolderUseCasesTest {
             val create = CreateFolderUseCase(repo)
             val observe = ObserveFoldersUseCase(repo)
 
-            create(NoteFolder(name = "A"))
+            create(NoteFolder(name = "A")).getOrThrow()
 
             val list = observe().first()
 
             assertEquals(1, list.size)
+        }
+
+    @Test
+    fun createFolder_blankName_returnsFailure() =
+        runBlocking {
+            val repo = FakeFolderRepo()
+            val create = CreateFolderUseCase(repo)
+            val result = create(NoteFolder(name = "   "))
+            assertEquals(true, result.isFailure)
+            assertEquals("Folder name must not be blank", result.exceptionOrNull()?.message)
         }
 }
