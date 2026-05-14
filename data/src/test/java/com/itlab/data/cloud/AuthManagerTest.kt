@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import com.firebase.ui.auth.AuthUI
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.auth.FirebaseAuth
@@ -17,6 +18,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.unmockkConstructor
 import io.mockk.verify
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -80,15 +82,19 @@ class AuthManagerTest {
     }
 
     @Test
-    fun `signOut should call AuthUI signOut`() {
-        val authUI = mockk<AuthUI>()
-        every { AuthUI.getInstance() } returns authUI
-        every { authUI.signOut(any()) } returns mockk(relaxed = true)
+    fun `signOut should call AuthUI signOut`() =
+        runBlocking {
+            val authUI = mockk<AuthUI>()
 
-        authManager.signOut(context)
+            val mockTask = Tasks.forResult<Void>(null)
 
-        verify { authUI.signOut(context) }
-    }
+            every { AuthUI.getInstance() } returns authUI
+            every { authUI.signOut(any()) } returns mockTask
+
+            authManager.signOut(context)
+
+            verify { authUI.signOut(context) }
+        }
 
     @Test
     fun `getSignInIntent should return intent from builder`() {

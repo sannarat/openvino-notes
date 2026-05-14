@@ -153,46 +153,45 @@ class SyncManagerImplTest {
     fun `sync should complete full cycle with push and pull`() =
         runBlocking {
             val userId = "user1"
+            val localNoteId = "local_1"
+            val remoteNoteId = "remote_1"
 
-            // 1. Настройка для PUSH: одна несинхронизированная заметка
-            val unsyncedNote = createTestNote("local_1").copy(isSynced = false)
+            val expectedLocalPath = "users/$userId/notes/$localNoteId"
+            val expectedRemotePath = "users/$userId/notes/$remoteNoteId"
+
+            val unsyncedNote = createTestNote(localNoteId).copy(userId = userId, isSynced = false)
             coEvery { noteDao.getUnsyncedNotes() } returns listOf(unsyncedNote)
             with(jsonConverter) {
-                every { unsyncedNote.toJson() } returns "{\"id\":\"local_1\"}"
+                every { unsyncedNote.toJson() } returns "{\"id\":\"$localNoteId\"}"
             }
-            coEvery { cloudDataSource.uploadNote("local_1", any()) } returns Result.Success(Unit)
-            coEvery { noteDao.update(any()) } just Runs // Покрывает: noteDao.update(syncedEntity)
+            coEvery { cloudDataSource.uploadNote(expectedLocalPath, any()) } returns Result.Success(Unit)
+            coEvery { noteDao.update(any()) } just Runs
 
-            // 2. Настройка для PULL: в облаке есть заметка, которой нет локально
-            val cloudMeta = CloudNoteMetadata("remote_1", now)
+            val cloudMeta = CloudNoteMetadata(key = expectedRemotePath, updatedAt = now)
             coEvery { cloudDataSource.listNoteMetadata(userId) } returns Result.Success(listOf(cloudMeta))
 
-            // Локально есть только local_1, значит remote_1 нужно скачать
-            val localNote = createTestNote("local_1").copy(isSynced = true)
+            val localNote = createTestNote(localNoteId).copy(userId = userId, isSynced = true)
             every { noteDao.getAllNotes() } returns flowOf(listOf(localNote))
 
-            val remoteJson = "{\"id\":\"remote_1\"}"
-            val remoteEntity = createTestNote("remote_1")
+            val remoteJson = "{\"id\":\"$remoteNoteId\"}"
+            val remoteEntity = createTestNote(remoteNoteId).copy(userId = userId)
 
-            coEvery { cloudDataSource.downloadNote("remote_1") } returns Result.Success(remoteJson)
-            every { jsonConverter.toEntity(remoteJson, userId) } returns remoteEntity // Покрывает маппинг
-            coEvery { noteDao.insert(remoteEntity) } just Runs // Покрывает: noteDao.insert(entity)
+            coEvery { cloudDataSource.downloadNote(expectedRemotePath) } returns Result.Success(remoteJson)
+            every { jsonConverter.toEntity(remoteJson, userId) } returns remoteEntity
+            coEvery { noteDao.insert(remoteEntity) } just Runs
 
-            // Исполнение
             syncManager.sync(userId)
 
-            // Проверки
             assertEquals(SyncState.Success, syncManager.syncState.value)
 
             coVerifyOrder {
-                // Проверяем последовательность для уверенности
                 noteDao.getUnsyncedNotes()
-                cloudDataSource.uploadNote("local_1", any())
-                noteDao.update(match { it.id == "local_1" && it.isSynced })
+                cloudDataSource.uploadNote(expectedLocalPath, any())
+                noteDao.update(match { it.id == localNoteId && it.isSynced })
 
                 cloudDataSource.listNoteMetadata(userId)
-                cloudDataSource.downloadNote("remote_1")
-                noteDao.insert(match { it.id == "remote_1" })
+                cloudDataSource.downloadNote(expectedRemotePath)
+                noteDao.insert(match { it.id == remoteNoteId })
             }
         }
 

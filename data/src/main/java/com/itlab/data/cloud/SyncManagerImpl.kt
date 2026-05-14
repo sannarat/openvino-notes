@@ -61,7 +61,7 @@ class SyncManagerImpl(
         for (entity in unsyncedEntities) {
             val json = with(jsonConverter) { entity.toJson() }
 
-            val result = cloudDataSource.uploadNote(entity.id, json)
+            val result = cloudDataSource.uploadNote("users/${entity.userId}/notes/${entity.id}", json)
 
             when (result) {
                 is Result.Success -> {
