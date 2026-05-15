@@ -49,4 +49,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.serialization.json)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test) 
+    testImplementation(libs.kotlin.test)
 }
