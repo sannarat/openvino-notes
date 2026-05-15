@@ -1,6 +1,7 @@
-package com.itlab.domain.usecase.noteusecase
+package com.itlab.domain
 
 import com.itlab.domain.repository.AuthRepository
+import com.itlab.domain.usecase.noteusecase.GetUserIdUseCase
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -10,7 +11,6 @@ import org.junit.Before
 import org.junit.Test
 
 class GetUserIdUseCaseTest {
-
     @MockK
     lateinit var authRepository: AuthRepository
 
