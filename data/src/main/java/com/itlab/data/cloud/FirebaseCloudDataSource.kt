@@ -9,6 +9,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
 import java.io.File
 import kotlin.time.Instant
+import com.itlab.domain.cloud.DomainFile
 
 class FirebaseCloudDataSource(
     private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
@@ -71,16 +72,17 @@ class FirebaseCloudDataSource(
 
     override suspend fun uploadMedia(
         key: String,
-        file: File,
+        file: DomainFile,
         mimeType: String,
     ): Result<Unit> =
         safeCall {
+            val javaFile = java.io.File(file.path)
             val fileRef = rootRef.child(key)
             val metadata =
                 com.google.firebase.storage.storageMetadata {
                     contentType = mimeType
                 }
-            file.inputStream().use { stream ->
+            javaFile.inputStream().use { stream ->
                 fileRef.putStream(stream, metadata).await()
             }
             Unit
@@ -88,11 +90,12 @@ class FirebaseCloudDataSource(
 
     override suspend fun downloadMedia(
         key: String,
-        destination: File,
+        destination: DomainFile,
     ): Result<Unit> =
         safeCall {
+            val javaFile = java.io.File(destination.path)
             val fileRef = rootRef.child(key)
-            fileRef.getFile(destination).await()
+            fileRef.getFile(javaFile).await()
             Unit
         }
 
