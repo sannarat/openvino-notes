@@ -1,95 +1,154 @@
 package com.itlab.notes.ui.notes
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.CompareArrows
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kotlin.math.abs
+import com.itlab.notes.onboarding.OnboardingTargets
+import com.itlab.notes.onboarding.onboardingTarget
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun notesListScreen(
+    directoryId: String,
     directoryName: String,
     notes: List<NoteItemUi>,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
     directories: List<DirectoryItemUi>,
     actions: NotesListActions,
 ) {
     val colors = MaterialTheme.colorScheme
+    val selectedNoteIds = remember { mutableStateListOf<String>() }
+    var showMoveDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val isSelectionMode = selectedNoteIds.isNotEmpty()
+    val selectedCount = selectedNoteIds.size
+    val clearSelection = {
+        selectedNoteIds.clear()
+        showMoveDialog = false
+        showDeleteDialog = false
+    }
+    val deleteSelected = {
+        notes.filter { it.id in selectedNoteIds }.forEach { note ->
+            actions.onNoteDelete(note)
+        }
+        clearSelection()
+    }
+    val handleBack = {
+        when {
+            showDeleteDialog -> showDeleteDialog = false
+            showMoveDialog -> showMoveDialog = false
+            isSelectionMode -> clearSelection()
+            else -> actions.onBack()
+        }
+    }
+
+    BackHandler(onBack = handleBack)
 
     Scaffold(
         containerColor = colors.background,
         topBar = {
             notesTopBar(
                 directoryName = directoryName,
-                onBack = actions.onBack,
+                selectedCount = selectedCount,
+                onBack = handleBack,
+                onMoveSelected = { showMoveDialog = true },
+                onDeleteSelected = { showDeleteDialog = true },
             )
         },
         floatingActionButton = {
-            notesFab(onAddNoteClick = actions.onAddNoteClick)
+            if (!isSelectionMode && canCreateNotesInDirectory(directoryId)) {
+                notesFab(onAddNoteClick = actions.onAddNoteClick)
+            }
         },
     ) { paddingValues ->
-        notesListContent(
-            notes = notes,
-            paddingValues = paddingValues,
-            directories = directories,
-            actions =
-                NotesListContentActions(
-                    onNoteDelete = actions.onNoteDelete,
-                    onNoteMove = actions.onNoteMove,
-                    onNoteClick = actions.onNoteClick,
-                ),
-        )
+        Box(Modifier.fillMaxSize()) {
+            notesListContent(
+                notes = notes,
+                searchQuery = searchQuery,
+                onSearchQueryChange = onSearchQueryChange,
+                paddingValues = paddingValues,
+                selectedNoteIds = selectedNoteIds,
+                actions =
+                    NotesListContentActions(
+                        onNoteDelete = actions.onNoteDelete,
+                        onNoteClick = actions.onNoteClick,
+                    ),
+            )
+            if (showMoveDialog && selectedNoteIds.isNotEmpty()) {
+                notesMoveNotesDialog(
+                    currentDirectoryId = directoryId,
+                    directories = directories,
+                    onDismissRequest = { showMoveDialog = false },
+                    onFolderChosen = { folderId ->
+                        selectedNoteIds.forEach { noteId -> actions.onNoteMove(noteId, folderId) }
+                        selectedNoteIds.clear()
+                        showMoveDialog = false
+                    },
+                )
+            }
+            if (showDeleteDialog && selectedNoteIds.isNotEmpty()) {
+                notesDeleteConfirmationDialog(
+                    selectedCount = selectedCount,
+                    onDismissRequest = { showDeleteDialog = false },
+                    onConfirmDelete = deleteSelected,
+                )
+            }
+        }
     }
 }
 
@@ -103,7 +162,6 @@ data class NotesListActions(
 
 private data class NotesListContentActions(
     val onNoteDelete: (NoteItemUi) -> Unit,
-    val onNoteMove: (noteId: String, directoryId: String) -> Unit,
     val onNoteClick: (NoteItemUi) -> Unit,
 )
 
@@ -111,18 +169,52 @@ private data class NotesListContentActions(
 @Composable
 private fun notesTopBar(
     directoryName: String,
+    selectedCount: Int,
     onBack: () -> Unit,
+    onMoveSelected: () -> Unit,
+    onDeleteSelected: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     CenterAlignedTopAppBar(
-        title = { Text(directoryName, color = colors.onSurface) },
+        title = {
+            Text(
+                text = if (selectedCount > 0) "$selectedCount selected" else directoryName,
+                color = colors.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector =
+                        if (selectedCount > 0) {
+                            Icons.Rounded.Close
+                        } else {
+                            Icons.AutoMirrored.Rounded.ArrowBack
+                        },
                     contentDescription = null,
                     tint = colors.onSurface,
                 )
+            }
+        },
+        actions = {
+            if (selectedCount > 0) {
+                IconButton(onClick = onMoveSelected) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.CompareArrows,
+                        contentDescription = null,
+                        tint = colors.onSurface,
+                    )
+                }
+                IconButton(onClick = onDeleteSelected) {
+                    Icon(
+                        imageVector = Icons.Rounded.Delete,
+                        contentDescription = null,
+                        tint = colors.onSurface,
+                    )
+                }
             }
         },
         colors =
@@ -137,14 +229,208 @@ private fun notesTopBar(
 }
 
 @Composable
+private fun notesMoveNotesDialog(
+    currentDirectoryId: String,
+    directories: List<DirectoryItemUi>,
+    onDismissRequest: () -> Unit,
+    onFolderChosen: (String) -> Unit,
+) {
+    val moveTargets =
+        remember(directories, currentDirectoryId) {
+            directories.filter { !isVirtualDirectory(it.id) && it.id != currentDirectoryId }
+        }
+    universalBasicAlertDialog(
+        onDismissRequest = onDismissRequest,
+        slots =
+            UniversalBasicAlertDialogSlots(
+                icon = Icons.AutoMirrored.Rounded.CompareArrows,
+                iconContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                iconTintColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                title = {
+                    Text(
+                        text = "Move to folder",
+                        fontWeight = FontWeight.W400,
+                    )
+                },
+                input = {
+                    notesMoveTargetsBlock(
+                        directories = moveTargets,
+                        onFolderChosen = onFolderChosen,
+                    )
+                },
+                actions = {
+                    TextButton(
+                        onClick = onDismissRequest,
+                        contentPadding = PaddingValues(horizontal = 12.dp),
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+            ),
+    )
+}
+
+@Composable
+private fun notesMoveTargetsBlock(
+    directories: List<DirectoryItemUi>,
+    onFolderChosen: (String) -> Unit,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = MaterialTheme.shapes.large,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        if (directories.isEmpty()) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 20.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "No other folders to move to",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 180.dp)
+                        .verticalScroll(rememberScrollState()),
+            ) {
+                directories.forEachIndexed { index, dir ->
+                    notesMoveTargetRow(
+                        directory = dir,
+                        onClick = { onFolderChosen(dir.id) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 0.dp),
+                    )
+                    if (index < directories.lastIndex) {
+                        notesMoveTargetsDivider()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun notesMoveTargetRow(
+    directory: DirectoryItemUi,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.medium)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Folder,
+            contentDescription = null,
+            tint = colors.onSurfaceVariant,
+            modifier = Modifier.size(25.dp),
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = directory.name,
+            color = colors.onSurface,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun notesMoveTargetsDivider() {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .padding(horizontal = 10.dp)
+                    .fillMaxWidth(0.9f),
+            contentAlignment = Alignment.Center,
+        ) {
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                thickness = 1.dp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun notesDeleteConfirmationDialog(
+    selectedCount: Int,
+    onDismissRequest: () -> Unit,
+    onConfirmDelete: () -> Unit,
+) {
+    universalBasicAlertDialog(
+        onDismissRequest = onDismissRequest,
+        slots =
+            UniversalBasicAlertDialogSlots(
+                icon = Icons.Rounded.Delete,
+                iconContainerColor = MaterialTheme.colorScheme.errorContainer,
+                iconTintColor = MaterialTheme.colorScheme.onErrorContainer,
+                title = {
+                    Text(
+                        text = "Delete selected notes?",
+                    )
+                },
+                input = {
+                    Text(
+                        text = "This will permanently delete $selectedCount note(s).",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                },
+                actions = {
+                    TextButton(
+                        onClick = onDismissRequest,
+                        contentPadding = PaddingValues(horizontal = 12.dp),
+                    ) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = onConfirmDelete,
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError,
+                            ),
+                    ) {
+                        Text("Delete")
+                    }
+                },
+            ),
+    )
+}
+
+@Composable
 private fun notesFab(onAddNoteClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     FloatingActionButton(
         onClick = onAddNoteClick,
+        modifier = Modifier.onboardingTarget(OnboardingTargets.NOTES_FAB),
         containerColor = colors.primary,
     ) {
         Icon(
-            Icons.Default.Add,
+            Icons.Rounded.Add,
             contentDescription = null,
             tint = colors.onPrimary,
         )
@@ -154,167 +440,123 @@ private fun notesFab(onAddNoteClick: () -> Unit) {
 @Composable
 private fun notesListContent(
     notes: List<NoteItemUi>,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
     paddingValues: androidx.compose.foundation.layout.PaddingValues,
-    directories: List<DirectoryItemUi>,
+    selectedNoteIds: MutableList<String>,
     actions: NotesListContentActions,
 ) {
-    var pendingMoveNote by remember { mutableStateOf<NoteItemUi?>(null) }
+    val isSelectionMode = selectedNoteIds.isNotEmpty()
     Column(
         modifier =
             Modifier
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp),
     ) {
-        searchField()
+        searchField(
+            query = searchQuery,
+            onQueryChange = onSearchQueryChange,
+        )
+
+        val isSearchActive = searchQuery.isNotBlank()
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.padding(top = 4.dp),
         ) {
+            if (notes.isEmpty() && isSearchActive) {
+                item {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 80.dp)
+                                .heightIn(min = 220.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        notesSearchEmptyState()
+                    }
+                }
+            }
+            val tourNoteId = notes.firstOrNull()?.id
             items(
                 items = notes,
                 key = { note -> note.id },
             ) { note ->
                 notesListItem(
                     note = note,
-                    onDelete = { actions.onNoteDelete(note) },
-                    onClick = { actions.onNoteClick(note) },
-                    onMoveRequest = { pendingMoveNote = note },
+                    isSelected = note.id in selectedNoteIds,
+                    modifier =
+                        if (note.id == tourNoteId) {
+                            Modifier.onboardingTarget(OnboardingTargets.NOTES_NOTE_ROW)
+                        } else {
+                            Modifier
+                        },
+                    onClick = {
+                        if (isSelectionMode) {
+                            if (note.id in selectedNoteIds) {
+                                selectedNoteIds.remove(note.id)
+                            } else {
+                                selectedNoteIds.add(note.id)
+                            }
+                        } else {
+                            actions.onNoteClick(note)
+                        }
+                    },
+                    onLongClick = {
+                        if (note.id !in selectedNoteIds) {
+                            selectedNoteIds.add(note.id)
+                        }
+                    },
                 )
             }
         }
     }
-    pendingMoveNote?.let { note ->
-        moveNoteDialog(
-            directories = directories,
-            onMoveTo = { directoryId ->
-                actions.onNoteMove(note.id, directoryId)
-                pendingMoveNote = null
-            },
-            onDismiss = { pendingMoveNote = null },
-        )
-    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun notesListItem(
     note: NoteItemUi,
-    onDelete: () -> Unit,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    onMoveRequest: () -> Unit,
+    onLongClick: () -> Unit,
 ) {
-    var isDeleteDispatched by remember(note.id) { mutableStateOf(false) }
-    val dismissState =
-        rememberSwipeToDismissBoxState(
-            positionalThreshold = { totalDistance -> totalDistance * 0.22f },
-        )
-    val swipeProgress by
-        remember(dismissState) {
-            derivedStateOf {
-                dismissState.progress.coerceIn(0f, 1f)
-            }
-        }
-    val swipeOffsetPx by
-        remember(dismissState) {
-            derivedStateOf {
-                kotlin.runCatching { abs(dismissState.requireOffset()) }.getOrDefault(0f)
-            }
-        }
-    LaunchedEffect(dismissState.targetValue, isDeleteDispatched) {
-        if (!isDeleteDispatched && dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
-            isDeleteDispatched = true
-            onDelete()
-        }
-    }
-    SwipeToDismissBox(
-        state = dismissState,
-        enableDismissFromStartToEnd = false,
-        backgroundContent = {
-            swipeDeleteBackground(
-                isActive = dismissState.targetValue == SwipeToDismissBoxValue.EndToStart,
-                swipeProgress = swipeProgress,
-                swipeOffsetPx = swipeOffsetPx,
-            )
-        },
-    ) {
-        noteCard(
-            note = note,
-            onClick = onClick,
-            onLongClick = onMoveRequest,
-        )
-    }
-}
-
-@Composable
-private fun swipeDeleteBackground(
-    isActive: Boolean,
-    swipeProgress: Float,
-    swipeOffsetPx: Float,
-) {
-    val colors = MaterialTheme.colorScheme
-    val density = LocalDensity.current
-    val clampedProgress = swipeProgress.coerceIn(0f, 1f)
-    val activeScale by animateFloatAsState(
-        targetValue = if (isActive) 1f else (0.9f + clampedProgress * 0.1f),
-        label = "deleteIconScale",
+    noteCard(
+        note = note,
+        isSelected = isSelected,
+        modifier = modifier,
+        onClick = onClick,
+        onLongClick = onLongClick,
     )
-    val activeAlpha by animateFloatAsState(
-        targetValue = if (isActive) 1f else (0.62f + clampedProgress * 0.28f),
-        label = "deleteIconAlpha",
-    )
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxSize().padding(vertical = 1.dp),
-        contentAlignment = Alignment.CenterEnd,
-    ) {
-        val maxWidth = maxWidth
-        val gapFromCard = 8.dp
-        val targetWidth =
-            with(density) { (swipeOffsetPx - gapFromCard.toPx()).coerceAtLeast(0f).toDp() }
-                .coerceAtMost(maxWidth)
-        val animatedWidth by animateDpAsState(targetValue = targetWidth, label = "deleteBackgroundWidth")
-        Surface(
-            color = colors.errorContainer.copy(alpha = 0.6f),
-            shape = RoundedCornerShape(16.dp),
-            modifier =
-                Modifier
-                    .fillMaxHeight()
-                    .width(animatedWidth),
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = null,
-                    tint = colors.onErrorContainer.copy(alpha = activeAlpha),
-                    modifier =
-                        Modifier.graphicsLayer(
-                            scaleX = activeScale,
-                            scaleY = activeScale,
-                        ),
-                )
-            }
-        }
-    }
 }
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 private fun noteCard(
     note: NoteItemUi,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = colors.surfaceVariant),
-        shape = RoundedCornerShape(16.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (isSelected) {
+                        colors.surfaceContainerHighest
+                    } else {
+                        colors.surfaceContainer
+                    },
+            ),
+        shape = MaterialTheme.shapes.large,
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
+                .clip(MaterialTheme.shapes.large)
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick,
@@ -323,85 +565,59 @@ private fun noteCard(
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
             Text(
                 text = note.title,
-                color = colors.onSurface,
+                color =
+                    if (isSelected) {
+                        colors.onPrimaryContainer
+                    } else {
+                        colors.onSurface
+                    },
                 style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = note.content,
-                color = colors.onSurfaceVariant,
+                text = noteCardDescriptionText(note),
+                color =
+                    if (isSelected) {
+                        colors.onPrimaryContainer
+                    } else if (note.content.isBlank()) {
+                        colors.onSurfaceVariant.copy(alpha = 0.7f)
+                    } else {
+                        colors.onSurfaceVariant
+                    },
                 style = MaterialTheme.typography.bodySmall,
-                maxLines = 4,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+private fun noteCardDescriptionText(note: NoteItemUi): String =
+    buildString {
+        append(if (note.content.isNotBlank()) note.content else "No description")
+        if (note.attachments.isNotEmpty()) {
+            append(" · ")
+            append(note.attachments.size)
+            append(" attachment")
+            if (note.attachments.size != 1) append("s")
+        }
+    }
+
 @Composable
-private fun moveNoteDialog(
-    directories: List<DirectoryItemUi>,
-    onMoveTo: (String) -> Unit,
-    onDismiss: () -> Unit,
+private fun searchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Move note") },
-        text = {
-            Column {
-                directories.forEach { dir ->
-                    TextButton(
-                        onClick = { onMoveTo(dir.id) },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(dir.name)
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        },
-    )
-}
-
-@Composable
-private fun searchField() {
-    val colors = MaterialTheme.colorScheme
-
-    Surface(
-        color = colors.surfaceVariant.copy(alpha = 0.65f),
-        shape = RoundedCornerShape(24.dp),
+    appSearchField(
+        value = query,
+        onValueChange = onQueryChange,
         modifier =
             Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                Icons.Default.Menu,
-                contentDescription = null,
-                tint = colors.onSurfaceVariant,
-            )
-            Text(
-                text = "Hinted search text",
-                color = colors.onSurfaceVariant,
-                modifier =
-                    Modifier
-                        .padding(horizontal = 16.dp)
-                        .weight(1f),
-            )
-            Icon(
-                Icons.Default.Search,
-                contentDescription = null,
-                tint = colors.onSurfaceVariant,
-            )
-        }
-    }
+                .padding(vertical = 16.dp)
+                .onboardingTarget(OnboardingTargets.NOTES_SEARCH),
+        placeholderText = "Search notes",
+    )
 }

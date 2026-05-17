@@ -80,6 +80,37 @@ class SearchNotesUseCaseTest {
         }
 
     @Test
+    fun `invoke should filter by folder when folderId is set`() =
+        runBlocking {
+            val now = Instant.fromEpochMilliseconds(System.currentTimeMillis())
+            val notes =
+                listOf(
+                    Note(
+                        userId = "u1",
+                        id = "1",
+                        title = "Shopping List",
+                        folderId = "folder_a",
+                        createdAt = now,
+                        updatedAt = now,
+                    ),
+                    Note(
+                        userId = "u1",
+                        id = "2",
+                        title = "Shopping budget",
+                        folderId = "folder_b",
+                        createdAt = now,
+                        updatedAt = now,
+                    ),
+                )
+            coEvery { repo.observeNotes() } returns flowOf(notes)
+
+            val result = searchNotesUseCase("shop", folderId = "folder_a").first()
+
+            assertEquals(1, result.size)
+            assertEquals("1", result[0].id)
+        }
+
+    @Test
     fun `invoke should cover all branches of content matching`() =
         runBlocking {
             val now = Instant.fromEpochMilliseconds(System.currentTimeMillis())

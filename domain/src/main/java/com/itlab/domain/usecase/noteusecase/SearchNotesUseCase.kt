@@ -9,12 +9,17 @@ import kotlinx.coroutines.flow.map
 class SearchNotesUseCase(
     private val repo: NotesRepository,
 ) {
-    operator fun invoke(query: String): Flow<List<Note>> {
+    operator fun invoke(
+        query: String,
+        folderId: String? = null,
+    ): Flow<List<Note>> {
         val normalizedQuery = query.trim().lowercase()
         if (normalizedQuery.isBlank()) return repo.observeNotes()
 
         return repo.observeNotes().map { notes ->
-            notes.filter { note -> note.matches(normalizedQuery) }
+            notes
+                .filter { note -> folderId == null || note.folderId == folderId }
+                .filter { note -> note.matches(normalizedQuery) }
         }
     }
 

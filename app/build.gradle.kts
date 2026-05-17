@@ -1,3 +1,4 @@
+import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -71,6 +72,15 @@ kotlin {
     }
 }
 
+configure<DetektExtension> {
+    config.setFrom(
+        files(
+            rootProject.file("detekt.yml"),
+            layout.projectDirectory.file("detekt.yml"),
+        ),
+    )
+}
+
 dependencies {
     implementation(project(":domain"))
     implementation(project(":data"))
@@ -80,11 +90,14 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -97,5 +110,8 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.auth)
+    implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.play.services.auth)
     implementation(libs.koin.workmanager)
 }
