@@ -99,4 +99,6 @@ dependencies {
     testImplementation(libs.androidx.work.testing)
     testImplementation(libs.koin.test)
     testImplementation(libs.koin.test.junit4)
+    testImplementation(libs.mockk.agent.jvm)
+    implementation(libs.koin.workmanager)
 }
