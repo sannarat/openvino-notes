@@ -168,7 +168,13 @@ class FirebaseCloudDataSourceTest {
             every { childRef.putStream(any(), any()) } returns task
             coEvery { task.await() } returns mockk()
 
-            val result = dataSource.uploadMedia("key", com.itlab.domain.cloud.DomainFile(file.absolutePath), mimeType)
+            val result =
+                dataSource.uploadMedia(
+                    "key",
+                    com.itlab.domain.cloud
+                        .DomainFile(file.absolutePath),
+                    mimeType,
+                )
 
             assertTrue(result is Result.Success)
             file.delete()
@@ -185,10 +191,16 @@ class FirebaseCloudDataSourceTest {
             every { childRef.getFile(any<File>()) } returns task
             coEvery { task.await() } returns mockk()
 
-            val result = dataSource.downloadMedia("key", com.itlab.domain.cloud.DomainFile(testFile.absolutePath))
+            val result =
+                dataSource.downloadMedia(
+                    "key",
+                    com.itlab.domain.cloud
+                        .DomainFile(testFile.absolutePath),
+                )
 
             assertTrue(result is Result.Success)
         }
+
     @Test
     fun `safeCall catches FirebaseException`() =
         runBlocking {

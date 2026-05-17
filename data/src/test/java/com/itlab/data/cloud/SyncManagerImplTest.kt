@@ -8,13 +8,12 @@ import com.itlab.data.entity.NoteEntity
 import com.itlab.data.mapper.NoteEntityJsonConverter
 import com.itlab.domain.cloud.CloudDataSource
 import com.itlab.domain.cloud.CloudNoteMetadata
+import com.itlab.domain.cloud.DomainFile
 import com.itlab.domain.cloud.Result
 import com.itlab.domain.cloud.SyncState
-import com.itlab.domain.cloud.DomainFile
 import io.mockk.MockKAnnotations
 import io.mockk.Runs
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -29,7 +28,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import timber.log.Timber
-import java.io.File
 import java.io.IOException
 import kotlin.time.Clock
 
@@ -75,7 +73,8 @@ class SyncManagerImplTest {
 
         coEvery { cloudDataSource.listMediaMetadata(any()) } returns Result.Success(emptyList())
 
-        coEvery { cloudDataSource.uploadMedia(any(), any<com.itlab.domain.cloud.DomainFile>(), any()) } returns Result.Success(Unit)
+        coEvery { cloudDataSource.uploadMedia(any(), any<com.itlab.domain.cloud.DomainFile>(), any()) } returns
+            Result.Success(Unit)
         coEvery { cloudDataSource.downloadMedia(any(), any()) } returns Result.Success(Unit)
 
         syncManager = SyncManagerImpl(context, noteDao, mediaDao, cloudDataSource, jsonConverter)

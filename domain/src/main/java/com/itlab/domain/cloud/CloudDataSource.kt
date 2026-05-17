@@ -1,8 +1,11 @@
 package com.itlab.domain.cloud
 
 import kotlin.time.Instant
+
 @JvmInline
-value class DomainFile(val path: String)
+value class DomainFile(
+    val path: String,
+)
 
 sealed interface Result<out T> {
     data class Success<out T>(
@@ -41,6 +44,7 @@ interface CloudDataSource {
 
     suspend fun deleteMedia(key: String): Result<Unit>
 }
+
 data class CloudNoteMetadata(
     val key: String,
     val updatedAt: Instant,
