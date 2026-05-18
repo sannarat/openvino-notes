@@ -41,6 +41,7 @@ nav:
       - 'Презентационный слой (MVI/MVVM)': architecture/presentation.md
       - 'Интерактивный онбординг': architecture/onboarding.md
   - Интерфейс и UI-слой: app/ui.md
+  - Локальный ИИ (OpenVINO): openvino/openvino.md
   - Сценарии использования (Use Cases): architecture/use_cases.md
   - 'Слой данных и СУБД':
       - 'Схема Room и медиа-архитектура': database/schema.md
