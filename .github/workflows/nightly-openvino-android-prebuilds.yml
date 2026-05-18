@@ -55,7 +55,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3.2.2
+        uses: android-actions/setup-android@v4.0.1
         with:
           packages: platform-tools
 
@@ -76,11 +76,18 @@ jobs:
         uses: actions/cache@v4.2.4
         with:
           path: ${{ runner.temp }}/ccache
-          key: openvino-android-ccache-${{ runner.os }}-${{ env.ANDROID_NDK_VERSION }}-${{ matrix.android_abi }}-${{ env.OPENVINO_REF }}-${{ env.OPENVINO_GENAI_REF }}-${{ env.GENAI_JAVA_API_REF }}-${{ env.OPENVINO_CONTRIB_REF }}-${{ env.ONETBB_REF }}-${{ hashFiles('.github/scripts/nightly/**') }}
+          # ccache validates compiler identity, flags, and source content itself.
+          # Keep workflow/helper script churn out of the primary key to avoid
+          # storing duplicate 600+ MB archives for equivalent native outputs.
+          key: openvino-android-ccache-v1-${{ runner.os }}-${{ env.ANDROID_NDK_VERSION }}-${{ matrix.android_abi }}-${{ env.OPENVINO_REF }}-${{ env.OPENVINO_GENAI_REF }}-${{ env.GENAI_JAVA_API_REF }}-${{ env.OPENVINO_CONTRIB_REF }}-${{ env.ONETBB_REF }}
           restore-keys: |
+            openvino-android-ccache-v1-${{ runner.os }}-${{ env.ANDROID_NDK_VERSION }}-${{ matrix.android_abi }}-${{ env.OPENVINO_REF }}-${{ env.OPENVINO_GENAI_REF }}-${{ env.GENAI_JAVA_API_REF }}-${{ env.OPENVINO_CONTRIB_REF }}-${{ env.ONETBB_REF }}-
             openvino-android-ccache-${{ runner.os }}-${{ env.ANDROID_NDK_VERSION }}-${{ matrix.android_abi }}-${{ env.OPENVINO_REF }}-${{ env.OPENVINO_GENAI_REF }}-${{ env.GENAI_JAVA_API_REF }}-${{ env.OPENVINO_CONTRIB_REF }}-${{ env.ONETBB_REF }}-
+            openvino-android-ccache-v1-${{ runner.os }}-${{ env.ANDROID_NDK_VERSION }}-${{ matrix.android_abi }}-
             openvino-android-ccache-${{ runner.os }}-${{ env.ANDROID_NDK_VERSION }}-${{ matrix.android_abi }}-
+            openvino-android-ccache-v1-${{ runner.os }}-${{ env.ANDROID_NDK_VERSION }}-
             openvino-android-ccache-${{ runner.os }}-${{ env.ANDROID_NDK_VERSION }}-
+            openvino-android-ccache-v1-${{ runner.os }}-
             openvino-android-ccache-${{ runner.os }}-
 
       - name: Prepare build directories
