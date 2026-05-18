@@ -38,8 +38,6 @@ nav:
   - 'Введение': index.md
   - 'Архитектура системы':
       - 'Общий обзор и DI': architecture/overview.md
-      - 'Презентационный слой (MVI/MVVM)': architecture/presentation.md
-      - 'Интерактивный онбординг': architecture/onboarding.md
   - Интерфейс и UI-слой: app/ui.md
   - Локальный ИИ (OpenVINO): openvino/openvino.md
   - Сценарии использования (Use Cases): architecture/use_cases.md
