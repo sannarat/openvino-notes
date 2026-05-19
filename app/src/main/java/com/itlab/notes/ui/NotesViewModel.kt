@@ -279,8 +279,9 @@ class NotesViewModel(
         directory: DirectoryItemUi,
     ): Boolean {
         if (note.title.trim().isEmpty()) return false
-        val targetFolderId = note.folderId ?: directory.id.asDomainFolderId()
         val existing = useCases.getNoteUseCase(note.id)
+        if (existing == null && !canCreateNotesInDirectory(directory.id)) return false
+        val targetFolderId = note.folderId ?: directory.id.asDomainFolderId()
         val result =
             if (existing != null) {
                 useCases.updateNoteUseCase(existing.applyUiUpdate(note, targetFolderId))
